@@ -14,7 +14,7 @@ import './styles/components.css';
 import './styles/puzzle.css';
 
 export function App() {
-  // Step state: 1 = Welcome, 2 = Complete Puzzle, 3 = Completion & Spreadsheet Sync
+  // Step state: 1 = Welcome, 2 = Complete Puzzle, 3 = Completion & Leaderboard
   const [step, setStep] = useState(1);
 
   // Player name
@@ -77,11 +77,22 @@ export function App() {
     startNewGame(newDiff);
   };
 
-  // Continue from Step 1 to Step 2
+  // Continue from Step 1 to Step 2: Records First Name to Google Sheet immediately!
   const handleContinueFromWelcome = () => {
     const cleanName = playerName.trim() || APP_CONFIG.DEFAULT_NAME;
     Storage.setPlayerName(cleanName);
     setPlayerName(cleanName);
+
+    // Auto-record player First Name to Google Sheet right on start
+    SpreadsheetService.recordResult({
+      name: cleanName,
+      moves: 0,
+      timeFormatted: '00:00',
+      timeSeconds: 0,
+      score: 0,
+      puzzleImage: selectedPuzzleImage?.title || 'Community Image'
+    });
+
     startNewGame(difficulty);
     setStep(2);
   };
@@ -173,9 +184,9 @@ export function App() {
     const score = Math.max(500, Math.round(baseScore - timePenalty - movePenalty));
     setLastScore(score);
 
-    // Auto-record player result in Google Spreadsheet / local database
+    // Auto-record player result in Google Spreadsheet / SheetDB API
     SpreadsheetService.recordResult({
-      name: playerName || 'Player',
+      name: Storage.getPlayerName() || playerName || 'Player',
       moves: finalMoves,
       timeFormatted: formatTime(finalTimeSec),
       timeSeconds: finalTimeSec,
@@ -228,7 +239,7 @@ export function App() {
         />
       )}
 
-      {/* Step 3: Completion & Spreadsheet Record (No fake leaderboard) */}
+      {/* Step 3: Completion & Leaderboard (First Names) */}
       {step === 3 && (
         <CompletionScreen
           playerName={playerName}

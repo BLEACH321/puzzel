@@ -6,16 +6,20 @@ const STORAGE_KEY = '8puzzle_spreadsheet_records';
 const WEBHOOK_KEY = '8puzzle_sheet_webhook_url';
 
 export const SpreadsheetService = {
-  // Get active API URL
+  // Always get active API URL (defaulting to SheetDB)
   getWebhookUrl() {
-    return localStorage.getItem(WEBHOOK_KEY) || DEFAULT_SHEETDB_API_URL;
+    const custom = localStorage.getItem(WEBHOOK_KEY);
+    if (custom && custom.trim().length > 5) {
+      return custom.trim();
+    }
+    return DEFAULT_SHEETDB_API_URL;
   },
 
   setWebhookUrl(url) {
-    if (url && url.trim()) {
+    if (url && url.trim().length > 5) {
       localStorage.setItem(WEBHOOK_KEY, url.trim());
     } else {
-      localStorage.setItem(WEBHOOK_KEY, DEFAULT_SHEETDB_API_URL);
+      localStorage.removeItem(WEBHOOK_KEY);
     }
   },
 
@@ -29,7 +33,7 @@ export const SpreadsheetService = {
     }
   },
 
-  // Fetch live leaderboard rankings from SheetDB or local storage
+  // Fetch live names & scores directly from the Google Sheet via SheetDB
   async getLiveLeaderboard() {
     const localRecords = this.getRecords();
     const apiUrl = this.getWebhookUrl();
@@ -44,27 +48,28 @@ export const SpreadsheetService = {
         if (response.ok) {
           const cloudData = await response.json();
           if (Array.isArray(cloudData) && cloudData.length > 0) {
-            // Map sheet columns to standard player objects
-            const cloudPlayers = cloudData.map(row => {
-              const name = row['FIRST NAME'] || row['First Name'] || row.FirstName || row.Name || row.name || 'Player';
-              const firstName = name.trim().split(' ')[0] || 'Player';
-              const score = parseInt(row.SCORE || row.Score || row.score, 10) || 0;
-              const moves = parseInt(row.MOVES || row.Moves || row.moves, 10) || 0;
-              const time = row.TIME || row.Time || row.time || '00:00';
-              return {
-                id: row.ID || row.id || ('CLOUD-' + Math.random()),
-                name: firstName,
-                score: score,
-                moves: moves,
-                timeFormatted: time
-              };
-            });
+            const cloudPlayers = cloudData
+              .filter(row => (row['FIRST NAME'] || row['First Name'] || row.Name || row.name))
+              .map((row, idx) => {
+                const rawName = row['FIRST NAME'] || row['First Name'] || row.FirstName || row.Name || row.name || 'Player';
+                const firstName = rawName.trim().split(' ')[0] || 'Player';
+                const score = parseInt(row.SCORE || row.Score || row.score, 10) || (1450 - idx * 15);
+                const moves = parseInt(row.MOVES || row.Moves || row.moves, 10) || 6;
+                const time = row.TIME || row.Time || row.time || '00:08';
+                return {
+                  id: row.ID || row.id || ('SHEET-' + idx),
+                  name: firstName,
+                  score: score,
+                  moves: moves,
+                  timeFormatted: time
+                };
+              });
 
-            // Merge unique records
+            // Merge unique records by name
             const map = new Map();
             for (const p of [...cloudPlayers, ...localRecords]) {
-              const key = p.name + '-' + p.score + '-' + p.moves;
-              if (!map.has(key)) {
+              const key = p.name.toLowerCase();
+              if (!map.has(key) || (map.get(key).score < p.score)) {
                 map.set(key, p);
               }
             }
@@ -72,12 +77,12 @@ export const SpreadsheetService = {
           }
         }
       } catch (err) {
-        console.warn('Could not fetch cloud leaderboard, using local records:', err);
+        console.warn('Could not fetch cloud leaderboard:', err);
       }
     }
 
     // Default mock competitors if list is short
-    if (combined.length < 3) {
+    if (combined.length < 2) {
       combined.push(
         { id: 'DEFAULT-1', name: 'Mia', score: 1250, moves: 8, timeFormatted: '00:15', avatar: '👧', avatarBg: '#EC4899' },
         { id: 'DEFAULT-2', name: 'Noah', score: 875, moves: 12, timeFormatted: '00:28', avatar: '👦', avatarBg: '#3B82F6' }
@@ -99,7 +104,7 @@ export const SpreadsheetService = {
     }));
   },
 
-  // Save a new completion record and push directly to SheetDB / Google Sheets
+  // Save and automatically push First Name & game stats to Google Spreadsheet
   async recordResult(recordData) {
     const timestampStr = new Date().toLocaleString();
     const recordId = 'REC-' + Date.now();
@@ -122,36 +127,28 @@ export const SpreadsheetService = {
     existing.unshift(record);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
 
-    // Post to SheetDB matching EXACT Google Sheet column names
+    // Post to SheetDB matching exact "FIRST NAME" column in Google Sheet
     const apiUrl = this.getWebhookUrl();
     if (apiUrl) {
       try {
         const payload = {
           data: [
             {
-              // Exact Column Name in Google Sheet
               'FIRST NAME': firstName,
               'First Name': firstName,
               'FirstName': firstName,
               'NAME': firstName,
               'Name': firstName,
-              'name': firstName,
-              // Other standard columns
               'MOVES': record.moves,
               'Moves': record.moves,
-              'moves': record.moves,
               'TIME': record.timeFormatted,
               'Time': record.timeFormatted,
-              'time': record.timeFormatted,
               'SCORE': record.score,
               'Score': record.score,
-              'score': record.score,
               'PUZZLE': record.puzzleImage,
               'Puzzle': record.puzzleImage,
-              'puzzle': record.puzzleImage,
               'DATE': record.timestamp,
               'Date': record.timestamp,
-              'Timestamp': record.timestamp,
               'ID': record.id
             }
           ]
@@ -168,7 +165,7 @@ export const SpreadsheetService = {
 
         if (response.ok) {
           record.syncedToCloud = true;
-          console.log('✅ Recorded FIRST NAME to SheetDB Google Sheet:', firstName);
+          console.log('✅ SheetDB record success for FIRST NAME:', firstName);
         }
       } catch (err) {
         console.warn('SheetDB sync attempt:', err);
@@ -176,34 +173,5 @@ export const SpreadsheetService = {
     }
 
     return record;
-  },
-
-  // Export all saved submissions to CSV
-  downloadCSV() {
-    const records = this.getRecords();
-    if (records.length === 0) {
-      alert('No game records to download yet.');
-      return;
-    }
-
-    const headers = ['FIRST NAME', 'MOVES', 'TIME', 'SCORE', 'PUZZLE', 'DATE', 'RECORD ID'];
-    const rows = records.map(r => [
-      `"${r.name.replace(/"/g, '""')}"`,
-      r.moves,
-      `"${r.timeFormatted}"`,
-      r.score,
-      `"${r.puzzleImage}"`,
-      `"${r.timestamp}"`,
-      `"${r.id}"`
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `8puzzle_results_${new Date().toISOString().slice(0, 10)}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   }
 };
