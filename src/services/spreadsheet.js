@@ -46,11 +46,11 @@ export const SpreadsheetService = {
           if (Array.isArray(cloudData) && cloudData.length > 0) {
             // Map sheet columns to standard player objects
             const cloudPlayers = cloudData.map(row => {
-              const name = row.Name || row.name || 'Player';
+              const name = row['FIRST NAME'] || row['First Name'] || row.FirstName || row.Name || row.name || 'Player';
               const firstName = name.trim().split(' ')[0] || 'Player';
-              const score = parseInt(row.Score || row.score, 10) || 0;
-              const moves = parseInt(row.Moves || row.moves, 10) || 0;
-              const time = row.Time || row.time || '00:00';
+              const score = parseInt(row.SCORE || row.Score || row.score, 10) || 0;
+              const moves = parseInt(row.MOVES || row.Moves || row.moves, 10) || 0;
+              const time = row.TIME || row.Time || row.time || '00:00';
               return {
                 id: row.ID || row.id || ('CLOUD-' + Math.random()),
                 name: firstName,
@@ -87,7 +87,6 @@ export const SpreadsheetService = {
     // Sort descending by score
     combined.sort((a, b) => b.score - a.score);
 
-    // Format top rankings
     const avatars = ['👧', '🧩', '👦', '🌟', '🚀', '🐱', '🦊', '🐼'];
     const colors = ['#EC4899', '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#06B6D4'];
 
@@ -123,26 +122,37 @@ export const SpreadsheetService = {
     existing.unshift(record);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
 
-    // Post to SheetDB
+    // Post to SheetDB matching EXACT Google Sheet column names
     const apiUrl = this.getWebhookUrl();
     if (apiUrl) {
       try {
         const payload = {
           data: [
             {
-              ID: record.id,
-              Name: record.name,
-              name: record.name,
-              Moves: record.moves,
-              moves: record.moves,
-              Time: record.timeFormatted,
-              time: record.timeFormatted,
-              Score: record.score,
-              score: record.score,
-              Puzzle: record.puzzleImage,
-              puzzle: record.puzzleImage,
-              Date: record.timestamp,
-              Timestamp: record.timestamp
+              // Exact Column Name in Google Sheet
+              'FIRST NAME': firstName,
+              'First Name': firstName,
+              'FirstName': firstName,
+              'NAME': firstName,
+              'Name': firstName,
+              'name': firstName,
+              // Other standard columns
+              'MOVES': record.moves,
+              'Moves': record.moves,
+              'moves': record.moves,
+              'TIME': record.timeFormatted,
+              'Time': record.timeFormatted,
+              'time': record.timeFormatted,
+              'SCORE': record.score,
+              'Score': record.score,
+              'score': record.score,
+              'PUZZLE': record.puzzleImage,
+              'Puzzle': record.puzzleImage,
+              'puzzle': record.puzzleImage,
+              'DATE': record.timestamp,
+              'Date': record.timestamp,
+              'Timestamp': record.timestamp,
+              'ID': record.id
             }
           ]
         };
@@ -158,7 +168,7 @@ export const SpreadsheetService = {
 
         if (response.ok) {
           record.syncedToCloud = true;
-          console.log('✅ Recorded result to SheetDB:', record);
+          console.log('✅ Recorded FIRST NAME to SheetDB Google Sheet:', firstName);
         }
       } catch (err) {
         console.warn('SheetDB sync attempt:', err);
@@ -176,23 +186,22 @@ export const SpreadsheetService = {
       return;
     }
 
-    const headers = ['Record ID', 'First Name', 'Moves', 'Time (MM:SS)', 'Time (Seconds)', 'Score', 'Puzzle Image', 'Date & Time'];
+    const headers = ['FIRST NAME', 'MOVES', 'TIME', 'SCORE', 'PUZZLE', 'DATE', 'RECORD ID'];
     const rows = records.map(r => [
-      `"${r.id}"`,
       `"${r.name.replace(/"/g, '""')}"`,
       r.moves,
       `"${r.timeFormatted}"`,
-      r.timeSeconds,
       r.score,
       `"${r.puzzleImage}"`,
-      `"${r.timestamp}"`
+      `"${r.timestamp}"`,
+      `"${r.id}"`
     ]);
 
     const csvContent = 'data:text/csv;charset=utf-8,' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `8puzzle_leaderboard_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `8puzzle_results_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
