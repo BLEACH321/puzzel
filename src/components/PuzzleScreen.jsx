@@ -14,12 +14,10 @@ export function PuzzleScreen({
   onChangeDifficulty,
   onTileMove,
   onRequestHint,
-  onAutoMove,
   onRestart
 }) {
   const [showOriginalModal, setShowOriginalModal] = useState(false);
-  const [showNumbers, setShowNumbers] = useState(false);
-  const [showGhost, setShowGhost] = useState(false);
+  const [showNumbers, setShowNumbers] = useState(true);
   const [toastMessage, setToastMessage] = useState(null);
 
   const handleInvalidMove = () => {
@@ -79,29 +77,27 @@ export function PuzzleScreen({
           </div>
         </div>
 
-        {/* Optional Clean Number & Guide Toggles */}
-        <div style={{ display: 'flex', gap: '4px' }}>
-          <button
-            type="button"
-            onClick={() => {
-              sound.playTap();
-              setShowNumbers(!showNumbers);
-            }}
-            title="Toggle subtle tile numbers"
-            style={{
-              background: showNumbers ? '#FEF08A' : 'rgba(255, 255, 255, 0.2)',
-              color: showNumbers ? '#854D0E' : '#FFFFFF',
-              border: '1px solid rgba(255, 255, 255, 0.3)',
-              borderRadius: '9999px',
-              padding: '4px 8px',
-              fontSize: '11px',
-              fontWeight: 800,
-              cursor: 'pointer'
-            }}
-          >
-            🔢 {showNumbers ? 'Numbers' : '123'}
-          </button>
-        </div>
+        {/* Number Toggle */}
+        <button
+          type="button"
+          onClick={() => {
+            sound.playTap();
+            setShowNumbers(!showNumbers);
+          }}
+          title="Toggle numbers"
+          style={{
+            background: showNumbers ? '#FEF08A' : 'rgba(255, 255, 255, 0.2)',
+            color: showNumbers ? '#854D0E' : '#FFFFFF',
+            border: '1px solid rgba(255, 255, 255, 0.3)',
+            borderRadius: '9999px',
+            padding: '4px 10px',
+            fontSize: '11px',
+            fontWeight: 800,
+            cursor: 'pointer'
+          }}
+        >
+          🔢 Numbers: {showNumbers ? 'ON' : 'OFF'}
+        </button>
       </div>
 
       {/* Direct On-Screen Target Reference Strip */}
@@ -133,7 +129,6 @@ export function PuzzleScreen({
           imageUrl={selectedPuzzleImage?.url}
           hintTile={hintTile}
           showNumbers={showNumbers}
-          showGhost={showGhost}
           onTileMove={onTileMove}
           onInvalidMove={handleInvalidMove}
         />

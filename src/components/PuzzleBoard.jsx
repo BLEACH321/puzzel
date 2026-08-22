@@ -5,8 +5,7 @@ export function PuzzleBoard({
   gridState,
   imageUrl,
   hintTile,
-  showNumbers = false,
-  showGhost = false,
+  showNumbers = true,
   onTileMove,
   onInvalidMove
 }) {
@@ -153,6 +152,13 @@ export function PuzzleBoard({
           <filter id="jigsawPieceShadow" x="-30%" y="-30%" width="160%" height="160%">
             <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.38" />
           </filter>
+
+          {/* Golden 3D Number Badge Gradient */}
+          <linearGradient id="badgeGold" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" stop-color="#FFE043"/>
+            <stop offset="60%" stop-color="#FACC15"/>
+            <stop offset="100%" stop-color="#D97706"/>
+          </linearGradient>
         </defs>
 
         {/* Board Background Frame */}
@@ -162,25 +168,12 @@ export function PuzzleBoard({
           width="312"
           height="312"
           rx="18"
-          fill="#1E293B"
-          stroke="#334155"
+          fill="#EEF2FF"
+          stroke="#C7D2FE"
           strokeWidth="2"
         />
 
-        {/* 1. Optional Ghost Target Background */}
-        {showGhost && (
-          <image
-            href={imageUrl}
-            x="0"
-            y="0"
-            width={BOARD_SIZE}
-            height={BOARD_SIZE}
-            preserveAspectRatio="xMidYMid slice"
-            opacity="0.22"
-          />
-        )}
-
-        {/* 2. Sleek Blank Destination Slot */}
+        {/* 1. Blank Destination Slot */}
         <g
           transform={`translate(${blankCol * TILE_SIZE}, ${blankRow * TILE_SIZE})`}
           className={`jigsaw-blank-slot ${selectedGridIdx !== null ? 'destination-glow' : ''}`}
@@ -191,15 +184,15 @@ export function PuzzleBoard({
             width="94"
             height="94"
             rx="12"
-            fill="#0F172A"
-            fillOpacity="0.6"
-            stroke="#60A5FA"
+            fill="#D8D8FE"
+            fillOpacity="0.75"
+            stroke="#818CF8"
             strokeWidth="2"
             strokeDasharray="6 4"
           />
         </g>
 
-        {/* 3. Sliced 3D Jigsaw Pieces */}
+        {/* 2. Sliced 3D Jigsaw Pieces */}
         {gridState.map((tileVal, gridIdx) => {
           if (tileVal === 0) return null;
 
@@ -241,12 +234,12 @@ export function PuzzleBoard({
                 clipPath={`url(#jigsaw-clip-${tileVal})`}
               />
 
-              {/* 3D Embossed Jigsaw Bevel & Stroke Overlay */}
+              {/* 3D Embossed Jigsaw Bevel Overlay */}
               <path
                 d={piecePath}
                 fill="none"
                 stroke="#FFFFFF"
-                strokeWidth="2"
+                strokeWidth="2.2"
                 strokeOpacity="0.75"
               />
               <path
@@ -257,27 +250,25 @@ export function PuzzleBoard({
                 strokeOpacity="0.3"
               />
 
-              {/* Subtle Minimalist Frosted Glass Index (Only if enabled) */}
+              {/* Golden Number Badge (1..8) on Tile */}
               {showNumbers && (
-                <g transform="translate(6, 6)" opacity="0.85">
-                  <rect
-                    x="0"
-                    y="0"
-                    width="18"
-                    height="18"
-                    rx="5"
-                    fill="rgba(15, 23, 42, 0.75)"
-                    stroke="rgba(255, 255, 255, 0.4)"
-                    strokeWidth="1"
+                <g transform="translate(8, 8)">
+                  <circle
+                    cx="11"
+                    cy="11"
+                    r="11"
+                    fill="url(#badgeGold)"
+                    stroke="#FFFFFF"
+                    strokeWidth="1.5"
                   />
                   <text
-                    x="9"
-                    y="13"
+                    x="11"
+                    y="15.5"
                     textAnchor="middle"
-                    fill="#FFFFFF"
-                    fontSize="11"
-                    fontWeight="800"
-                    fontFamily="system-ui, sans-serif"
+                    fill="#1E1B4B"
+                    fontSize="12"
+                    fontWeight="900"
+                    fontFamily="system-ui, -apple-system, sans-serif"
                   >
                     {tileVal}
                   </text>

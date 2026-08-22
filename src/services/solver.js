@@ -1,4 +1,4 @@
-// Solvability Engine & A* Solver with Balanced Scramble Complexities
+// Solvability Engine & A* Solver with Deep & Difficult Scramble
 
 export function getGoalState(size = 3) {
   const total = size * size;
@@ -87,7 +87,7 @@ export function getOptimalNextMove(initialState, size = 3) {
   gScores.set(startKey, 0);
 
   let iterations = 0;
-  const MAX_ITERATIONS = 4500;
+  const MAX_ITERATIONS = 5000;
 
   while (openSet.length > 0 && iterations < MAX_ITERATIONS) {
     iterations++;
@@ -155,11 +155,12 @@ export function getOptimalNextMove(initialState, size = 3) {
   return null;
 }
 
-export function generateSolvableBoard(size = 3, difficulty = 'normal') {
-  let steps = 22;
-  if (difficulty === 'easy') steps = 10;
-  else if (difficulty === 'normal') steps = 22;
-  else if (difficulty === 'hard') steps = 45;
+// Generate difficult, thoroughly mixed 50+ move scramble
+export function generateSolvableBoard(size = 3, difficulty = 'hard') {
+  let steps = 55;
+  if (difficulty === 'easy') steps = 18;
+  else if (difficulty === 'normal') steps = 36;
+  else if (difficulty === 'hard') steps = 55;
 
   let state = getGoalState(size);
   let lastMovedTile = -1;
