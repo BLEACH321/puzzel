@@ -1,25 +1,26 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { APP_CONFIG, INITIAL_LEADERBOARD, PUZZLE_IMAGES_LIST } from './services/config.js';
+import { APP_CONFIG, PUZZLE_IMAGES_LIST } from './services/config.js';
 import { generateSolvableBoard, isGoal, getOptimalNextMove } from './services/solver.js';
 import { Storage } from './services/storage.js';
+import { SpreadsheetService } from './services/spreadsheet.js';
 import { sound } from './services/audio.js';
 
 import { HomeScreen } from './components/HomeScreen.jsx';
 import { PuzzleScreen } from './components/PuzzleScreen.jsx';
-import { LeaderboardScreen } from './components/LeaderboardScreen.jsx';
+import { CompletionScreen } from './components/CompletionScreen.jsx';
 
 import './styles/design-system.css';
 import './styles/components.css';
 import './styles/puzzle.css';
 
 export function App() {
-  // Step state: 1 = Welcome, 2 = Complete Puzzle, 3 = Leaderboard
+  // Step state: 1 = Welcome, 2 = Complete Puzzle, 3 = Completion & Spreadsheet Sync
   const [step, setStep] = useState(1);
 
   // Player name
   const [playerName, setPlayerName] = useState(() => Storage.getPlayerName() || APP_CONFIG.DEFAULT_NAME);
 
-  // Difficulty mode: 'easy' by default for effortless, fun gameplay
+  // Difficulty mode: 'easy' by default
   const [difficulty, setDifficulty] = useState('easy');
 
   // Puzzle Image: Automatically picked randomly from uploaded pool
@@ -32,11 +33,9 @@ export function App() {
   const [moves, setMoves] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
-  const [hintsRemaining, setHintsRemaining] = useState(99); // Unlimited hints for easy play
   const [hintTile, setHintTile] = useState(null);
 
-  // Leaderboard & score
-  const [leaderboard, setLeaderboard] = useState(() => Storage.getLeaderboard() || INITIAL_LEADERBOARD);
+  // Score
   const [lastScore, setLastScore] = useState(980);
 
   // Format time MM:SS
@@ -68,7 +67,6 @@ export function App() {
     setGridState(newBoard);
     setMoves(0);
     setElapsedSeconds(0);
-    setHintsRemaining(99);
     setHintTile(null);
     setIsPlaying(true);
   }, []);
@@ -154,7 +152,7 @@ export function App() {
     }
   };
 
-  // Auto Move / Step Assist: automatically moves the next optimal piece
+  // Auto Move / Step Assist
   const handleAutoMove = () => {
     if (step !== 2 || !isPlaying) return;
 
@@ -164,7 +162,7 @@ export function App() {
     }
   };
 
-  // Victory Handler
+  // Victory Handler & Automatic Spreadsheet Recording
   const handleVictory = (finalMoves, finalTimeSec) => {
     setIsPlaying(false);
     sound.playVictory();
@@ -175,14 +173,15 @@ export function App() {
     const score = Math.max(500, Math.round(baseScore - timePenalty - movePenalty));
     setLastScore(score);
 
-    const updated = [
-      { rank: 1, name: 'Mia', score: Math.max(1250, score + 80), avatar: '👧', avatarBg: '#EC4899', badge: '1', badgeBg: '#F59E0B' },
-      { rank: 2, name: playerName || 'Player', score: score, avatar: '🧩', avatarBg: '#FFC000', badge: '2', badgeBg: '#93C5FD' },
-      { rank: 3, name: 'Noah', score: 875, avatar: '👦', avatarBg: '#3B82F6', badge: '3', badgeBg: '#D97706' }
-    ].sort((a, b) => b.score - a.score).map((p, i) => ({ ...p, rank: i + 1, badge: String(i + 1) }));
-
-    setLeaderboard(updated);
-    Storage.saveLeaderboard(updated);
+    // Auto-record player result in Google Spreadsheet / local database
+    SpreadsheetService.recordResult({
+      name: playerName || 'Player',
+      moves: finalMoves,
+      timeFormatted: formatTime(finalTimeSec),
+      timeSeconds: finalTimeSec,
+      score: score,
+      puzzleImage: selectedPuzzleImage?.title || 'Community Image'
+    });
 
     setTimeout(() => {
       setStep(3);
@@ -229,12 +228,14 @@ export function App() {
         />
       )}
 
-      {/* Step 3: Leaderboard */}
+      {/* Step 3: Completion & Spreadsheet Record (No fake leaderboard) */}
       {step === 3 && (
-        <LeaderboardScreen
-          leaderboard={leaderboard}
-          currentPlayerName={playerName}
-          userScore={lastScore}
+        <CompletionScreen
+          playerName={playerName}
+          moves={moves}
+          timeFormatted={formatTime(elapsedSeconds)}
+          score={lastScore}
+          selectedPuzzleImage={selectedPuzzleImage}
           onPlayAgain={handlePlayAgain}
         />
       )}
