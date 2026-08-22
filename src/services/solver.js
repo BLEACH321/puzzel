@@ -1,4 +1,4 @@
-// Solvability Engine & A* Solver with Easy Default Scramble
+// Solvability Engine & A* Solver with Balanced Scramble Complexities
 
 export function getGoalState(size = 3) {
   const total = size * size;
@@ -87,7 +87,7 @@ export function getOptimalNextMove(initialState, size = 3) {
   gScores.set(startKey, 0);
 
   let iterations = 0;
-  const MAX_ITERATIONS = 4000;
+  const MAX_ITERATIONS = 4500;
 
   while (openSet.length > 0 && iterations < MAX_ITERATIONS) {
     iterations++;
@@ -155,17 +155,11 @@ export function getOptimalNextMove(initialState, size = 3) {
   return null;
 }
 
-/**
- * Generate a solvable scramble that is very easy and fun by default:
- * Easy: 6-8 moves (super quick & easy!)
- * Normal: 14-18 moves (balanced)
- * Hard: 35+ moves (challenging)
- */
-export function generateSolvableBoard(size = 3, difficulty = 'easy') {
-  let steps = 6;
-  if (difficulty === 'easy') steps = 6;
-  else if (difficulty === 'normal') steps = 14;
-  else if (difficulty === 'hard') steps = 36;
+export function generateSolvableBoard(size = 3, difficulty = 'normal') {
+  let steps = 22;
+  if (difficulty === 'easy') steps = 10;
+  else if (difficulty === 'normal') steps = 22;
+  else if (difficulty === 'hard') steps = 45;
 
   let state = getGoalState(size);
   let lastMovedTile = -1;

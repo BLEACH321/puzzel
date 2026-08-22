@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { PuzzleBoard } from './PuzzleBoard.jsx';
 import { Stepper } from './Stepper.jsx';
 import { sound } from '../services/audio.js';
-import { Storage } from '../services/storage.js';
 
 export function PuzzleScreen({
   playerName,
@@ -19,8 +18,8 @@ export function PuzzleScreen({
   onRestart
 }) {
   const [showOriginalModal, setShowOriginalModal] = useState(false);
-  const [showNumbers, setShowNumbers] = useState(true);
-  const [showGhost, setShowGhost] = useState(true);
+  const [showNumbers, setShowNumbers] = useState(false);
+  const [showGhost, setShowGhost] = useState(false);
   const [toastMessage, setToastMessage] = useState(null);
 
   const handleInvalidMove = () => {
@@ -28,7 +27,7 @@ export function PuzzleScreen({
     setToastMessage('Move a neighboring piece');
     setTimeout(() => {
       setToastMessage(null);
-    }, 1500);
+    }, 1400);
   };
 
   return (
@@ -46,68 +45,62 @@ export function PuzzleScreen({
         Complete the Puzzle
       </h2>
 
-      {/* Helper Assistance Toggles: Numbers & Ghost Guide */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', marginBottom: '8px' }}>
-        <button
-          type="button"
-          onClick={() => {
-            sound.playTap();
-            setShowNumbers(!showNumbers);
-          }}
-          style={{
-            background: showNumbers ? '#FEF08A' : 'rgba(255, 255, 255, 0.2)',
-            color: showNumbers ? '#854D0E' : '#FFFFFF',
-            border: '1.5px solid rgba(255, 255, 255, 0.4)',
-            borderRadius: '9999px',
-            padding: '4px 10px',
-            fontSize: '11px',
-            fontWeight: 800,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            transition: 'all 150ms ease'
-          }}
-        >
-          <span>🔢</span>
-          <span>Numbers: {showNumbers ? 'ON' : 'OFF'}</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => {
-            sound.playTap();
-            setShowGhost(!showGhost);
-          }}
-          style={{
-            background: showGhost ? '#BFDBFE' : 'rgba(255, 255, 255, 0.2)',
-            color: showGhost ? '#1E40AF' : '#FFFFFF',
-            border: '1.5px solid rgba(255, 255, 255, 0.4)',
-            borderRadius: '9999px',
-            padding: '4px 10px',
-            fontSize: '11px',
-            fontWeight: 800,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px',
-            transition: 'all 150ms ease'
-          }}
-        >
-          <span>👻</span>
-          <span>Guide: {showGhost ? 'ON' : 'OFF'}</span>
-        </button>
+      {/* Difficulty Level Selector Chips */}
+      <div className="difficulty-chips-row" style={{ marginBottom: '8px' }}>
+        {[
+          { key: 'easy', label: '🟢 Easy' },
+          { key: 'normal', label: '⚡ Normal' },
+          { key: 'hard', label: '🔥 Master' }
+        ].map((d) => (
+          <button
+            key={d.key}
+            type="button"
+            className={`diff-chip-btn ${difficulty === d.key ? 'active' : ''}`}
+            onClick={() => {
+              sound.playTap();
+              onChangeDifficulty(d.key);
+            }}
+          >
+            {d.label}
+          </button>
+        ))}
       </div>
 
-      {/* Stats Badges Row */}
-      <div className="stats-pills-row" style={{ marginBottom: '8px' }}>
-        <div className="stat-pill-badge">
-          <span>⭐</span>
-          <span>Moves: <span className="highlight">{moves}</span></span>
+      {/* Stats Badges Row & Number Toggle */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%', maxWidth: '340px', marginBottom: '8px' }}>
+        <div className="stats-pills-row" style={{ margin: 0, gap: '6px' }}>
+          <div className="stat-pill-badge" style={{ padding: '4px 10px', fontSize: '11px' }}>
+            <span>⭐</span>
+            <span>Moves: <span className="highlight">{moves}</span></span>
+          </div>
+          <div className="stat-pill-badge" style={{ padding: '4px 10px', fontSize: '11px' }}>
+            <span>⏱</span>
+            <span>Time: <span className="highlight">{timeFormatted}</span></span>
+          </div>
         </div>
-        <div className="stat-pill-badge">
-          <span>⏱</span>
-          <span>Time: <span className="highlight">{timeFormatted}</span></span>
+
+        {/* Optional Clean Number & Guide Toggles */}
+        <div style={{ display: 'flex', gap: '4px' }}>
+          <button
+            type="button"
+            onClick={() => {
+              sound.playTap();
+              setShowNumbers(!showNumbers);
+            }}
+            title="Toggle subtle tile numbers"
+            style={{
+              background: showNumbers ? '#FEF08A' : 'rgba(255, 255, 255, 0.2)',
+              color: showNumbers ? '#854D0E' : '#FFFFFF',
+              border: '1px solid rgba(255, 255, 255, 0.3)',
+              borderRadius: '9999px',
+              padding: '4px 8px',
+              fontSize: '11px',
+              fontWeight: 800,
+              cursor: 'pointer'
+            }}
+          >
+            🔢 {showNumbers ? 'Numbers' : '123'}
+          </button>
         </div>
       </div>
 
@@ -126,9 +119,9 @@ export function PuzzleScreen({
           style={{ backgroundImage: `url("${selectedPuzzleImage?.url}")` }}
         />
         <div className="target-goal-info">
-          <span className="target-goal-label">🎯 Original Picture</span>
+          <span className="target-goal-label">🎯 Target Goal</span>
           <span className="target-goal-title">{selectedPuzzleImage?.title || 'Target Image'}</span>
-          <span className="target-goal-hint-text">🔍 Tap to zoom reference</span>
+          <span className="target-goal-hint-text">🔍 Tap to zoom image</span>
         </div>
         <span style={{ fontSize: '18px', color: '#2563EB' }}>👁</span>
       </div>
@@ -153,11 +146,11 @@ export function PuzzleScreen({
         )}
       </div>
 
-      {/* Action Controls: 💡 Hint, ✨ Auto Step, ↻ Restart */}
-      <div className="puzzle-btns-row" style={{ gap: '8px' }}>
+      {/* Action Controls: 💡 Hint, ↻ Restart */}
+      <div className="puzzle-btns-row" style={{ gap: '10px' }}>
         <button
           className="btn-gold-3d"
-          style={{ height: '48px', fontSize: '14px', flex: 1 }}
+          style={{ height: '48px', fontSize: '15px' }}
           onClick={() => {
             sound.playTap();
             onRequestHint();
@@ -168,35 +161,8 @@ export function PuzzleScreen({
         </button>
 
         <button
-          type="button"
-          onClick={() => {
-            sound.playTap();
-            onAutoMove();
-          }}
-          style={{
-            height: '48px',
-            flex: 1,
-            background: 'linear-gradient(180deg, #34D399 0%, #059669 100%)',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '16px',
-            fontSize: '14px',
-            fontWeight: 800,
-            cursor: 'pointer',
-            boxShadow: '0 4px 0 #047857, 0 8px 16px rgba(5, 150, 105, 0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px'
-          }}
-        >
-          <span>✨</span>
-          <span>Auto Step</span>
-        </button>
-
-        <button
           className="btn-purple-3d"
-          style={{ height: '48px', fontSize: '14px', flex: 1 }}
+          style={{ height: '48px', fontSize: '15px' }}
           onClick={() => {
             sound.playTap();
             onRestart();

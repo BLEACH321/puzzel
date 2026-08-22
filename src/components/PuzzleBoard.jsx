@@ -5,8 +5,8 @@ export function PuzzleBoard({
   gridState,
   imageUrl,
   hintTile,
-  showNumbers = true,
-  showGhost = true,
+  showNumbers = false,
+  showGhost = false,
   onTileMove,
   onInvalidMove
 }) {
@@ -39,7 +39,7 @@ export function PuzzleBoard({
     return (dr + dc) === 1;
   };
 
-  // Primary Tap-To-Move
+  // Tap-To-Move Handler
   const handleCellTap = (gridIdx) => {
     const tileVal = gridState[gridIdx];
     if (tileVal === 0) return;
@@ -51,13 +51,13 @@ export function PuzzleBoard({
       setTimeout(() => {
         setSelectedGridIdx(null);
         onTileMove(gridIdx, null);
-      }, 80);
+      }, 70);
     } else {
       setShakingGridIdx(gridIdx);
       if (onInvalidMove) onInvalidMove();
       setTimeout(() => {
         setShakingGridIdx(null);
-      }, 300);
+      }, 280);
     }
   };
 
@@ -151,29 +151,23 @@ export function PuzzleBoard({
 
           {/* 3D Drop Shadow for physical pieces */}
           <filter id="jigsawPieceShadow" x="-30%" y="-30%" width="160%" height="160%">
-            <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#0F172A" flood-opacity="0.35" />
+            <feDropShadow dx="0" dy="5" stdDeviation="5" flood-color="#0F172A" flood-opacity="0.38" />
           </filter>
-
-          {/* Number badge pill gradient */}
-          <linearGradient id="numBadgeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-            <stop offset="0%" stop-color="#FFE043"/>
-            <stop offset="100%" stop-color="#F59E0B"/>
-          </linearGradient>
         </defs>
 
         {/* Board Background Frame */}
         <rect
-          x="-5"
-          y="-5"
-          width="310"
-          height="310"
+          x="-6"
+          y="-6"
+          width="312"
+          height="312"
           rx="18"
-          fill="#EEF2FF"
-          stroke="#C7D2FE"
+          fill="#1E293B"
+          stroke="#334155"
           strokeWidth="2"
         />
 
-        {/* 1. Ghost Target Background (Watermark for super easy visual alignment) */}
+        {/* 1. Optional Ghost Target Background */}
         {showGhost && (
           <image
             href={imageUrl}
@@ -182,38 +176,27 @@ export function PuzzleBoard({
             width={BOARD_SIZE}
             height={BOARD_SIZE}
             preserveAspectRatio="xMidYMid slice"
-            opacity="0.32"
+            opacity="0.22"
           />
         )}
 
-        {/* 2. Blank Target Destination Slot */}
+        {/* 2. Sleek Blank Destination Slot */}
         <g
           transform={`translate(${blankCol * TILE_SIZE}, ${blankRow * TILE_SIZE})`}
           className={`jigsaw-blank-slot ${selectedGridIdx !== null ? 'destination-glow' : ''}`}
         >
           <rect
-            x="2"
-            y="2"
-            width="96"
-            height="96"
+            x="3"
+            y="3"
+            width="94"
+            height="94"
             rx="12"
-            fill="#D8D8FE"
-            fillOpacity="0.7"
-            stroke="#818CF8"
-            strokeWidth="2.5"
+            fill="#0F172A"
+            fillOpacity="0.6"
+            stroke="#60A5FA"
+            strokeWidth="2"
             strokeDasharray="6 4"
           />
-          <text
-            x="50"
-            y="54"
-            textAnchor="middle"
-            fill="#6366F1"
-            fontSize="14"
-            fontWeight="bold"
-            opacity="0.7"
-          >
-            SLOT
-          </text>
         </g>
 
         {/* 3. Sliced 3D Jigsaw Pieces */}
@@ -228,7 +211,6 @@ export function PuzzleBoard({
           const isSelected = selectedGridIdx === gridIdx;
           const isShaking = shakingGridIdx === gridIdx;
           const isHinted = hintTile === tileVal;
-          const isCorrect = (tileVal - 1) === gridIdx; // Already in correct spot!
 
           const sRow = Math.floor((tileVal - 1) / 3);
           const sCol = (tileVal - 1) % 3;
@@ -259,52 +241,46 @@ export function PuzzleBoard({
                 clipPath={`url(#jigsaw-clip-${tileVal})`}
               />
 
-              {/* 3D Embossed Jigsaw Outline Overlay */}
+              {/* 3D Embossed Jigsaw Bevel & Stroke Overlay */}
               <path
                 d={piecePath}
                 fill="none"
-                stroke={isCorrect ? "#4ADE80" : "#FFFFFF"}
-                strokeWidth={isCorrect ? "3" : "2.2"}
-                strokeOpacity={isCorrect ? "0.9" : "0.7"}
+                stroke="#FFFFFF"
+                strokeWidth="2"
+                strokeOpacity="0.75"
               />
               <path
                 d={piecePath}
                 fill="none"
-                stroke="#1E1B4B"
+                stroke="#0F172A"
                 strokeWidth="1.2"
-                strokeOpacity="0.25"
+                strokeOpacity="0.3"
               />
 
-              {/* Number Badge Helper (1..8) on top-left of piece */}
+              {/* Subtle Minimalist Frosted Glass Index (Only if enabled) */}
               {showNumbers && (
-                <g transform="translate(10, 10)">
-                  <circle
-                    cx="12"
-                    cy="12"
-                    r="12"
-                    fill="url(#numBadgeGrad)"
-                    stroke="#D97706"
-                    strokeWidth="1.5"
+                <g transform="translate(6, 6)" opacity="0.85">
+                  <rect
+                    x="0"
+                    y="0"
+                    width="18"
+                    height="18"
+                    rx="5"
+                    fill="rgba(15, 23, 42, 0.75)"
+                    stroke="rgba(255, 255, 255, 0.4)"
+                    strokeWidth="1"
                   />
                   <text
-                    x="12"
-                    y="17"
+                    x="9"
+                    y="13"
                     textAnchor="middle"
-                    fill="#1E1B4B"
-                    fontSize="13"
-                    fontWeight="900"
+                    fill="#FFFFFF"
+                    fontSize="11"
+                    fontWeight="800"
                     fontFamily="system-ui, sans-serif"
                   >
                     {tileVal}
                   </text>
-                </g>
-              )}
-
-              {/* Solved Spot Indicator Checkmark */}
-              {isCorrect && (
-                <g transform="translate(74, 10)">
-                  <circle cx="10" cy="10" r="9" fill="#22C55E" stroke="#FFFFFF" strokeWidth="1.5"/>
-                  <path d="M 6,10 L 9,13 L 14,7" fill="none" stroke="#FFFFFF" strokeWidth="2" strokeLinecap="round"/>
                 </g>
               )}
 
