@@ -1,0 +1,190 @@
+/* 8-Puzzle Sliced Image Board & Tile Animation Styles */
+
+/* Goal Reference Thumbnail Card (shown at top of puzzle board like in user mockup) */
+.goal-reference-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.goal-reference-box {
+  width: 100%;
+  max-width: 320px;
+  height: 120px;
+  border-radius: var(--radius-md);
+  background: var(--bg-card);
+  border: 2px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  background-size: contain;
+  background-repeat: no-repeat;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 6px;
+}
+
+.goal-label-badge {
+  font-size: 10px;
+  font-weight: 800;
+  color: #FFFFFF;
+  background: rgba(30, 27, 75, 0.75);
+  backdrop-filter: blur(6px);
+  padding: 3px 10px;
+  border-radius: var(--radius-full);
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* ==========================================================================
+   Puzzle Board 3x3 Container
+   ========================================================================== */
+.puzzle-board-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 4px 0 14px;
+}
+
+.puzzle-board-grid {
+  width: 100%;
+  max-width: 330px;
+  aspect-ratio: 1 / 1;
+  background: #E0E7FF;
+  border-radius: var(--radius-lg);
+  padding: 8px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: 6px;
+  box-shadow: inset 0 2px 6px rgba(79, 70, 229, 0.15),
+              0 10px 25px -5px rgba(79, 70, 229, 0.2);
+  touch-action: none; /* Prevents scroll conflict during gestures */
+  position: relative;
+}
+
+[data-theme="dark"] .puzzle-board-grid {
+  background: #1E1B4B;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.5);
+}
+
+/* ==========================================================================
+   Puzzle Tile Styles & Image Slicing
+   ========================================================================== */
+.puzzle-tile {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-sm);
+  background-color: var(--primary);
+  background-repeat: no-repeat;
+  background-size: 300% 300%;
+  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.25),
+              inset 0 1px 1px rgba(255, 255, 255, 0.3);
+  cursor: pointer;
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  padding: 6px;
+  transition: transform 140ms ease-out, box-shadow 140ms ease-out;
+  overflow: hidden;
+}
+
+.puzzle-tile:active {
+  transform: scale(0.96);
+}
+
+/* Blank/Empty Slot */
+.puzzle-tile.tile-blank {
+  background: rgba(238, 242, 255, 0.6);
+  border: 1.5px dashed #A5B4FC;
+  box-shadow: inset 0 2px 4px rgba(79, 70, 229, 0.08);
+  cursor: default;
+  pointer-events: none;
+}
+
+[data-theme="dark"] .puzzle-tile.tile-blank {
+  background: rgba(30, 27, 75, 0.4);
+  border: 1.5px dashed #4338CA;
+}
+
+/* Number Overlay Indicator on Tile */
+.tile-number-badge {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 800;
+  color: #FFFFFF;
+  background: rgba(30, 27, 75, 0.65);
+  backdrop-filter: blur(4px);
+  width: 20px;
+  height: 20px;
+  border-radius: var(--radius-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+/* Smart A* Hint Highlight Pulse */
+.puzzle-tile.hint-active {
+  animation: hintPulse 1s ease-in-out infinite alternate;
+  border: 2px solid var(--accent-gold);
+  z-index: 10;
+}
+
+@keyframes hintPulse {
+  0% {
+    transform: scale(0.96);
+    box-shadow: 0 0 0 0 rgba(245, 158, 11, 0.7);
+  }
+  100% {
+    transform: scale(1.03);
+    box-shadow: 0 0 18px 4px rgba(245, 158, 11, 0.9);
+  }
+}
+
+/* Sliced Background Positions for Tiles 1..8 */
+.tile-val-1 { background-position: 0% 0%; }
+.tile-val-2 { background-position: 50% 0%; }
+.tile-val-3 { background-position: 100% 0%; }
+.tile-val-4 { background-position: 0% 50%; }
+.tile-val-5 { background-position: 50% 50%; }
+.tile-val-6 { background-position: 100% 50%; }
+.tile-val-7 { background-position: 0% 100%; }
+.tile-val-8 { background-position: 50% 100%; }
+
+/* Move Slide Animation Classes */
+.tile-slide-up {
+  animation: slideUp 140ms ease-out;
+}
+.tile-slide-down {
+  animation: slideDown 140ms ease-out;
+}
+.tile-slide-left {
+  animation: slideLeft 140ms ease-out;
+}
+.tile-slide-right {
+  animation: slideRight 140ms ease-out;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+@keyframes slideDown {
+  from { transform: translateY(-100%); }
+  to { transform: translateY(0); }
+}
+@keyframes slideLeft {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+@keyframes slideRight {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(0); }
+}
