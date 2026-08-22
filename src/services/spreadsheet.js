@@ -1,19 +1,21 @@
-// Google Spreadsheet & CSV Data Sync Service for 8-Puzzle
+// Google Spreadsheet & SheetDB API Service for 8-Puzzle
+
+export const DEFAULT_SHEETDB_API_URL = 'https://sheetdb.io/api/v1/162rq1skhm8h3';
 
 const STORAGE_KEY = '8puzzle_spreadsheet_records';
 const WEBHOOK_KEY = '8puzzle_sheet_webhook_url';
 
 export const SpreadsheetService = {
-  // Get stored webhook URL (Google Apps Script / SheetDB / custom endpoint)
+  // Get active API URL (defaulting to the user's SheetDB endpoint)
   getWebhookUrl() {
-    return localStorage.getItem(WEBHOOK_KEY) || '';
+    return localStorage.getItem(WEBHOOK_KEY) || DEFAULT_SHEETDB_API_URL;
   },
 
   setWebhookUrl(url) {
-    if (url) {
+    if (url && url.trim()) {
       localStorage.setItem(WEBHOOK_KEY, url.trim());
     } else {
-      localStorage.removeItem(WEBHOOK_KEY);
+      localStorage.setItem(WEBHOOK_KEY, DEFAULT_SHEETDB_API_URL);
     }
   },
 
@@ -27,45 +29,75 @@ export const SpreadsheetService = {
     }
   },
 
-  // Save a new completion record
+  // Save a new completion record and push directly to SheetDB / Google Sheets
   async recordResult(recordData) {
+    const timestampStr = new Date().toLocaleString();
+    const recordId = 'REC-' + Date.now();
+
     const record = {
-      id: 'REC-' + Date.now(),
-      name: recordData.name || 'Anonymous',
+      id: recordId,
+      name: recordData.name || 'Player',
       moves: recordData.moves || 0,
       timeFormatted: recordData.timeFormatted || '00:00',
       timeSeconds: recordData.timeSeconds || 0,
       score: recordData.score || 0,
-      puzzleImage: recordData.puzzleImage || 'Unknown',
-      timestamp: new Date().toLocaleString(),
+      puzzleImage: recordData.puzzleImage || 'Community Image',
+      timestamp: timestampStr,
       syncedToCloud: false
     };
 
-    // 1. Save locally
+    // 1. Save locally for instant offline reliability & CSV export
     const existing = this.getRecords();
     existing.unshift(record);
     localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
 
-    // 2. If Google Sheet Webhook URL is configured, POST to it
-    const webhookUrl = this.getWebhookUrl();
-    if (webhookUrl) {
+    // 2. Post directly to SheetDB endpoint
+    const apiUrl = this.getWebhookUrl();
+    if (apiUrl) {
       try {
-        await fetch(webhookUrl, {
+        // SheetDB expects { "data": [ { "Name": "...", "Moves": "...", ... } ] }
+        const payload = {
+          data: [
+            {
+              ID: record.id,
+              Name: record.name,
+              name: record.name,
+              Moves: record.moves,
+              moves: record.moves,
+              Time: record.timeFormatted,
+              time: record.timeFormatted,
+              Score: record.score,
+              score: record.score,
+              Puzzle: record.puzzleImage,
+              puzzle: record.puzzleImage,
+              Date: record.timestamp,
+              Timestamp: record.timestamp
+            }
+          ]
+        };
+
+        const response = await fetch(apiUrl, {
           method: 'POST',
-          mode: 'no-cors', // standard for Google Apps Script Web Apps
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(record)
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(payload)
         });
-        record.syncedToCloud = true;
+
+        if (response.ok) {
+          record.syncedToCloud = true;
+          console.log('✅ Successfully posted result to SheetDB Google Sheet:', record);
+        }
       } catch (err) {
-        console.warn('Google Sheet webhook sync failed:', err);
+        console.warn('SheetDB sync attempt:', err);
       }
     }
 
     return record;
   },
 
-  // Export all saved submissions to Google Sheets / Excel compatible CSV file
+  // Export all saved submissions to CSV
   downloadCSV() {
     const records = this.getRecords();
     if (records.length === 0) {
@@ -89,7 +121,7 @@ export const SpreadsheetService = {
     const encodedUri = encodeURI(csvContent);
     const link = document.createElement('a');
     link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `8puzzle_results_${new Date().toISOString().slice(0, 10)}.csv`);
+    link.setAttribute('download', `8puzzle_sheetdb_results_${new Date().toISOString().slice(0, 10)}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
