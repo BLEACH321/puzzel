@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { TROPHY_HERO_SVG } from '../services/config.js';
 import { sound } from '../services/audio.js';
 import { Stepper } from './Stepper.jsx';
@@ -12,20 +12,20 @@ export function CompletionScreen({
   selectedPuzzleImage,
   onPlayAgain
 }) {
-  const [showSettings, setShowSettings] = useState(false);
-  const [webhookInput, setWebhookInput] = useState(() => SpreadsheetService.getWebhookUrl());
-  const [savedSuccess, setSavedSuccess] = useState(false);
+  const [leaderboard, setLeaderboard] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const playerFirstName = (playerName || 'Player').trim().split(' ')[0] || 'Player';
 
-  const handleSaveWebhook = (e) => {
-    e.preventDefault();
-    SpreadsheetService.setWebhookUrl(webhookInput);
-    setSavedSuccess(true);
-    sound.playTap();
-    setTimeout(() => {
-      setSavedSuccess(false);
-      setShowSettings(false);
-    }, 1200);
-  };
+  useEffect(() => {
+    let isMounted = true;
+    SpreadsheetService.getLiveLeaderboard().then((data) => {
+      if (isMounted) {
+        setLeaderboard(data);
+        setLoading(false);
+      }
+    });
+    return () => { isMounted = false; };
+  }, [playerName, score]);
 
   const handleDownloadCSV = () => {
     sound.playTap();
@@ -40,93 +40,148 @@ export function CompletionScreen({
         dangerouslySetInnerHTML={{ __html: TROPHY_HERO_SVG }}
       />
 
-      {/* Main Screen Title */}
-      <h1 className="welcome-title-bold" style={{ fontSize: '26px' }}>
-        Congratulations!
+      {/* Main Titles */}
+      <h1 className="welcome-title-bold" style={{ fontSize: '26px', marginBottom: '2px' }}>
+        Leaderboard
       </h1>
-      <p className="welcome-subtitle-text" style={{ marginBottom: '14px' }}>
-        You solved the puzzle successfully!
+      <p className="welcome-subtitle-text" style={{ marginBottom: '12px' }}>
+        Top Scores & Rankings
       </p>
 
-      {/* Player Score & Stats Summary Card */}
+      {/* Leaderboard Rankings Card with First Names */}
       <div
         style={{
           width: '100%',
           maxWidth: '340px',
           background: '#FFFFFF',
           borderRadius: '24px',
-          padding: '16px',
+          padding: '14px',
           boxShadow: '0 16px 32px rgba(13, 38, 181, 0.35)',
-          marginBottom: '14px'
+          marginBottom: '12px'
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '12px', paddingBottom: '10px', borderBottom: '1px solid #E2E8F0' }}>
-          <div
-            style={{
-              width: '42px',
-              height: '42px',
-              borderRadius: '50%',
-              background: '#EFF6FF',
-              border: '2px solid #3B82F6',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              fontSize: '20px'
-            }}
-          >
-            👤
+        {/* Your Score Highlight Summary Strip */}
+        <div
+          style={{
+            background: '#EFF6FF',
+            border: '1.5px solid #BFDBFE',
+            borderRadius: '16px',
+            padding: '8px 12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            marginBottom: '10px'
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '18px' }}>👤</span>
+            <div>
+              <div style={{ fontSize: '13px', fontWeight: 900, color: '#1E40AF' }}>
+                {playerFirstName} (You)
+              </div>
+              <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600 }}>
+                {moves} Moves • {timeFormatted}
+              </div>
+            </div>
           </div>
-          <div>
-            <div style={{ fontSize: '16px', fontWeight: 900, color: '#1E1B4B' }}>
-              {playerName || 'Player'}
-            </div>
-            <div style={{ fontSize: '12px', fontWeight: 600, color: '#64748B' }}>
-              Puzzle: {selectedPuzzleImage?.title || 'Community Image'}
-            </div>
+          <div style={{ fontSize: '16px', fontWeight: 900, color: '#2563EB' }}>
+            {score.toLocaleString()} pts
           </div>
         </div>
 
-        {/* 3-Stat Summary Grid */}
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px', marginBottom: '14px' }}>
-          <div style={{ background: '#F8FAFC', padding: '8px', borderRadius: '12px', textAlign: 'center', border: '1px solid #E2E8F0' }}>
-            <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 700 }}>MOVES</div>
-            <div style={{ fontSize: '16px', fontWeight: 900, color: '#2563EB' }}>{moves}</div>
-          </div>
+        {/* Stacked Leaderboard Rows */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
+          {leaderboard.slice(0, 5).map((p, idx) => {
+            const isCurrent = p.name.toLowerCase() === playerFirstName.toLowerCase() && p.score === score;
+            const rankMedal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`;
 
-          <div style={{ background: '#F8FAFC', padding: '8px', borderRadius: '12px', textAlign: 'center', border: '1px solid #E2E8F0' }}>
-            <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 700 }}>TIME</div>
-            <div style={{ fontSize: '16px', fontWeight: 900, color: '#059669' }}>{timeFormatted}</div>
-          </div>
+            return (
+              <div
+                key={p.id || idx}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '8px 12px',
+                  borderRadius: '14px',
+                  background: isCurrent ? '#FEF9C3' : idx === 0 ? '#FFFBEB' : '#F8FAFC',
+                  border: isCurrent ? '2px solid #FACC15' : '1px solid #E2E8F0',
+                  boxShadow: isCurrent ? '0 4px 10px rgba(250, 204, 21, 0.25)' : 'none',
+                  transition: 'all 150ms ease'
+                }}
+              >
+                {/* Left: Rank + Avatar + First Name */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <div
+                    style={{
+                      width: '26px',
+                      height: '26px',
+                      borderRadius: '50%',
+                      background: idx === 0 ? '#F59E0B' : idx === 1 ? '#94A3B8' : idx === 2 ? '#D97706' : '#E2E8F0',
+                      color: '#FFFFFF',
+                      fontSize: '11px',
+                      fontWeight: 900,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    {idx < 3 ? rankMedal : idx + 1}
+                  </div>
 
-          <div style={{ background: '#F8FAFC', padding: '8px', borderRadius: '12px', textAlign: 'center', border: '1px solid #E2E8F0' }}>
-            <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 700 }}>SCORE</div>
-            <div style={{ fontSize: '16px', fontWeight: 900, color: '#D97706' }}>{score}</div>
-          </div>
+                  <div
+                    style={{
+                      width: '32px',
+                      height: '32px',
+                      borderRadius: '50%',
+                      background: p.avatarBg || '#3B82F6',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      fontSize: '15px'
+                    }}
+                  >
+                    {p.avatar || '👤'}
+                  </div>
+
+                  <div style={{ display: 'flex', flexDirection: 'column' }}>
+                    <span style={{ fontSize: '13px', fontWeight: 900, color: '#1E1B4B' }}>
+                      {p.name} {isCurrent ? '⭐' : ''}
+                    </span>
+                    {p.timeFormatted && (
+                      <span style={{ fontSize: '10px', color: '#64748B', fontWeight: 600 }}>
+                        {p.moves ? `${p.moves} moves • ` : ''}{p.timeFormatted}
+                      </span>
+                    )}
+                  </div>
+                </div>
+
+                {/* Right: Score */}
+                <div style={{ fontSize: '14px', fontWeight: 900, color: idx === 0 ? '#D97706' : '#2563EB' }}>
+                  {p.score ? p.score.toLocaleString() : score}
+                </div>
+              </div>
+            );
+          })}
         </div>
 
-        {/* Spreadsheet Status & Actions */}
+        {/* Spreadsheet Status & CSV Export Strip */}
         <div
           style={{
             background: '#F0FDF4',
             border: '1.5px solid #86EFAC',
-            borderRadius: '14px',
-            padding: '10px 12px',
-            marginBottom: '10px',
+            borderRadius: '12px',
+            padding: '8px 10px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between'
           }}
         >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '18px' }}>📊</span>
-            <div>
-              <div style={{ fontSize: '12px', fontWeight: 800, color: '#166534' }}>
-                Saved to Spreadsheet
-              </div>
-              <div style={{ fontSize: '10px', color: '#15803D' }}>
-                {SpreadsheetService.getWebhookUrl() ? 'Synced to Cloud Sheet' : 'Recorded in local database'}
-              </div>
-            </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '15px' }}>📊</span>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: '#166534' }}>
+              Saved to SheetDB API
+            </span>
           </div>
 
           <button
@@ -137,33 +192,14 @@ export function CompletionScreen({
               color: '#FFFFFF',
               border: 'none',
               borderRadius: '8px',
-              padding: '6px 10px',
-              fontSize: '11px',
+              padding: '4px 8px',
+              fontSize: '10px',
               fontWeight: 800,
               cursor: 'pointer',
               boxShadow: '0 2px 4px rgba(22, 163, 74, 0.3)'
             }}
           >
             📥 Download CSV
-          </button>
-        </div>
-
-        {/* Google Sheet URL Setup link */}
-        <div style={{ textAlign: 'center' }}>
-          <button
-            type="button"
-            onClick={() => setShowSettings(true)}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: '#4F46E5',
-              fontSize: '11px',
-              fontWeight: 700,
-              cursor: 'pointer',
-              textDecoration: 'underline'
-            }}
-          >
-            ⚙️ Connect Custom Google Sheet Webhook URL
           </button>
         </div>
       </div>
@@ -183,65 +219,6 @@ export function CompletionScreen({
 
       {/* Progress Stepper: 3 of 3 */}
       <Stepper currentStep={3} totalSteps={3} />
-
-      {/* Google Sheet Webhook Configuration Modal */}
-      {showSettings && (
-        <div className="original-preview-overlay" onClick={() => setShowSettings(false)}>
-          <div className="original-preview-card" onClick={(e) => e.stopPropagation()} style={{ textAlign: 'left' }}>
-            <h3 style={{ fontSize: '16px', fontWeight: 800, color: '#1E1B4B', marginBottom: '6px' }}>
-              📊 Google Spreadsheet Sync
-            </h3>
-            <p style={{ fontSize: '12px', color: '#64748B', marginBottom: '12px' }}>
-              Paste your Google Apps Script Web App URL or SheetDB endpoint below to automatically push all game results directly into your Google Sheet.
-            </p>
-
-            <form onSubmit={handleSaveWebhook}>
-              <label style={{ fontSize: '11px', fontWeight: 800, color: '#475569', display: 'block', marginBottom: '4px' }}>
-                Google Sheet Webhook / Apps Script URL:
-              </label>
-              <input
-                type="url"
-                value={webhookInput}
-                onChange={(e) => setWebhookInput(e.target.value)}
-                placeholder="https://script.google.com/macros/s/.../exec"
-                style={{
-                  width: '100%',
-                  padding: '10px',
-                  borderRadius: '10px',
-                  border: '1.5px solid #CBD5E1',
-                  fontSize: '12px',
-                  marginBottom: '12px',
-                  boxSizing: 'border-box'
-                }}
-              />
-
-              {savedSuccess && (
-                <div style={{ color: '#16A34A', fontSize: '12px', fontWeight: 700, marginBottom: '10px' }}>
-                  ✅ Google Sheet URL saved successfully!
-                </div>
-              )}
-
-              <div style={{ display: 'flex', gap: '8px' }}>
-                <button
-                  type="submit"
-                  className="btn-gold-3d"
-                  style={{ height: '42px', fontSize: '13px', flex: 1 }}
-                >
-                  Save URL
-                </button>
-                <button
-                  type="button"
-                  className="btn-purple-3d"
-                  style={{ height: '42px', fontSize: '13px', flex: 1 }}
-                  onClick={() => setShowSettings(false)}
-                >
-                  Close
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
