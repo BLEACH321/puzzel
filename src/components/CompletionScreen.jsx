@@ -27,11 +27,6 @@ export function CompletionScreen({
     return () => { isMounted = false; };
   }, [playerName, score]);
 
-  const handleDownloadCSV = () => {
-    sound.playTap();
-    SpreadsheetService.downloadCSV();
-  };
-
   return (
     <div className="step-screen-view">
       {/* 3D Glowing Golden Trophy Artwork */}
@@ -57,7 +52,7 @@ export function CompletionScreen({
           borderRadius: '24px',
           padding: '14px',
           boxShadow: '0 16px 32px rgba(13, 38, 181, 0.35)',
-          marginBottom: '12px'
+          marginBottom: '14px'
         }}
       >
         {/* Your Score Highlight Summary Strip */}
@@ -70,7 +65,7 @@ export function CompletionScreen({
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginBottom: '10px'
+            marginBottom: '12px'
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -90,7 +85,7 @@ export function CompletionScreen({
         </div>
 
         {/* Stacked Leaderboard Rows */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
           {leaderboard.slice(0, 5).map((p, idx) => {
             const isCurrent = p.name.toLowerCase() === playerFirstName.toLowerCase() && p.score === score;
             const rankMedal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`;
@@ -163,44 +158,6 @@ export function CompletionScreen({
               </div>
             );
           })}
-        </div>
-
-        {/* Spreadsheet Status & CSV Export Strip */}
-        <div
-          style={{
-            background: '#F0FDF4',
-            border: '1.5px solid #86EFAC',
-            borderRadius: '12px',
-            padding: '8px 10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '15px' }}>📊</span>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#166534' }}>
-              Saved to SheetDB API
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleDownloadCSV}
-            style={{
-              background: '#16A34A',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '4px 8px',
-              fontSize: '10px',
-              fontWeight: 800,
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(22, 163, 74, 0.3)'
-            }}
-          >
-            📥 Download CSV
-          </button>
         </div>
       </div>
 
