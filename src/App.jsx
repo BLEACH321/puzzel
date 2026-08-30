@@ -74,15 +74,8 @@ export function App() {
     Storage.setPlayerName(cleanName);
     setPlayerName(cleanName);
 
-    // Auto-record player First Name to Google Sheet right on start
-    SpreadsheetService.recordResult({
-      name: cleanName,
-      moves: 0,
-      timeFormatted: '00:00',
-      timeSeconds: 0,
-      score: 0,
-      puzzleImage: selectedPuzzleImage?.title || 'Community Image'
-    });
+    // Initial First Name entry in Google Sheet (SheetDB)
+    SpreadsheetService.recordInitialPlayer(cleanName);
 
     startNewGame();
     setStep(2);

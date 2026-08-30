@@ -33,12 +33,12 @@ export const SpreadsheetService = {
     }
   },
 
-  // Fetch live names & scores directly from the Google Sheet via SheetDB
+  // Fetch live names, moves & leaderborder directly from Google Sheet via SheetDB
   async getLiveLeaderboard() {
     const localRecords = this.getRecords();
     const apiUrl = this.getWebhookUrl();
 
-    let combined = [...localRecords];
+    let combined = [];
 
     if (apiUrl) {
       try {
@@ -49,23 +49,35 @@ export const SpreadsheetService = {
           const cloudData = await response.json();
           if (Array.isArray(cloudData) && cloudData.length > 0) {
             const cloudPlayers = cloudData
-              .filter(row => (row['FIRST NAME'] || row['First Name'] || row.Name || row.name))
+              .filter(row => {
+                const name = row['FIRST NAME'] || row['First Name'] || row.Name || row.name;
+                return Boolean(name && name.trim());
+              })
               .map((row, idx) => {
                 const rawName = row['FIRST NAME'] || row['First Name'] || row.FirstName || row.Name || row.name || 'Player';
                 const firstName = rawName.trim().split(' ')[0] || 'Player';
-                const score = parseInt(row.SCORE || row.Score || row.score, 10) || (1450 - idx * 15);
-                const moves = parseInt(row.MOVES || row.Moves || row.moves, 10) || 6;
-                const time = row.TIME || row.Time || row.time || '00:08';
+
+                const rawMoves = row['Moves '] || row['Moves'] || row['MOVES'] || row['moves'] || '';
+                const movesNum = parseInt(rawMoves, 10);
+                const movesStr = isNaN(movesNum) ? (rawMoves || '0') : `${movesNum} moves`;
+
+                const rawLeaderborder = row['leaderborder'] || row['leaderboard'] || row['SCORE'] || row['Score'] || row['score'] || '';
+                const numericScore = parseInt(String(rawLeaderborder).replace(/[^0-9]/g, ''), 10) || 0;
+
+                const timeStr = row['TIME'] || row['Time'] || row['time'] || '';
+
                 return {
-                  id: row.ID || row.id || ('SHEET-' + idx),
+                  id: row.ID || row.id || `SHEET-${idx}-${firstName}`,
                   name: firstName,
-                  score: score,
-                  moves: moves,
-                  timeFormatted: time
+                  moves: isNaN(movesNum) ? rawMoves : movesNum,
+                  movesFormatted: movesStr,
+                  score: numericScore,
+                  leaderborder: rawLeaderborder || `${numericScore} pts`,
+                  timeFormatted: timeStr
                 };
               });
 
-            // Merge unique records by name
+            // Group / keep best score per player
             const map = new Map();
             for (const p of [...cloudPlayers, ...localRecords]) {
               const key = p.name.toLowerCase();
@@ -81,21 +93,17 @@ export const SpreadsheetService = {
       }
     }
 
-    // Default mock competitors if list is short
-    if (combined.length < 2) {
-      combined.push(
-        { id: 'DEFAULT-1', name: 'Mia', score: 1250, moves: 8, timeFormatted: '00:15', avatar: '👧', avatarBg: '#EC4899' },
-        { id: 'DEFAULT-2', name: 'Noah', score: 875, moves: 12, timeFormatted: '00:28', avatar: '👦', avatarBg: '#3B82F6' }
-      );
+    if (combined.length === 0 && localRecords.length > 0) {
+      combined = [...localRecords];
     }
 
-    // Sort descending by score
+    // Sort descending by score / leaderborder
     combined.sort((a, b) => b.score - a.score);
 
-    const avatars = ['👧', '🧩', '👦', '🌟', '🚀', '🐱', '🦊', '🐼'];
+    const avatars = ['🌟', '🧩', '👦', '👧', '🚀', '🐱', '🦊', '🐼'];
     const colors = ['#EC4899', '#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#06B6D4'];
 
-    return combined.slice(0, 10).map((player, idx) => ({
+    return combined.slice(0, 15).map((player, idx) => ({
       ...player,
       rank: idx + 1,
       name: player.name.trim().split(' ')[0] || 'Player',
@@ -104,19 +112,67 @@ export const SpreadsheetService = {
     }));
   },
 
-  // Save and automatically push First Name & game stats to Google Spreadsheet
+  // Save on Welcome Screen (Initial First Name entry)
+  async recordInitialPlayer(playerName) {
+    const firstName = (playerName || 'Player').trim().split(' ')[0] || 'Player';
+    const apiUrl = this.getWebhookUrl();
+
+    if (!apiUrl) return;
+
+    try {
+      // First try to check if user already exists
+      const searchRes = await fetch(`${apiUrl}/search?FIRST%20NAME=${encodeURIComponent(firstName)}`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      const existing = await searchRes.json();
+
+      if (Array.isArray(existing) && existing.length > 0) {
+        // Already exists in sheet, no need to duplicate row
+        return;
+      }
+
+      // If not exists, insert initial row
+      const payload = {
+        data: [
+          {
+            'FIRST NAME': firstName,
+            'Moves ': '',
+            'leaderborder': ''
+          }
+        ]
+      };
+
+      await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(payload)
+      });
+    } catch (err) {
+      console.warn('Initial player record warning:', err);
+    }
+  },
+
+  // Update Moves & Leaderboard on Game Complete / Victory
   async recordResult(recordData) {
     const timestampStr = new Date().toLocaleString();
     const recordId = 'REC-' + Date.now();
     const firstName = (recordData.name || 'Player').trim().split(' ')[0] || 'Player';
+    const movesVal = recordData.moves !== undefined ? recordData.moves : 0;
+    const scoreVal = recordData.score !== undefined ? recordData.score : 0;
+    const leaderborderVal = `${scoreVal.toLocaleString()} pts`;
 
     const record = {
       id: recordId,
       name: firstName,
-      moves: recordData.moves || 0,
+      moves: movesVal,
+      movesFormatted: `${movesVal} moves`,
       timeFormatted: recordData.timeFormatted || '00:00',
       timeSeconds: recordData.timeSeconds || 0,
-      score: recordData.score || 0,
+      score: scoreVal,
+      leaderborder: leaderborderVal,
       puzzleImage: recordData.puzzleImage || 'Community Image',
       timestamp: timestampStr,
       syncedToCloud: false
@@ -124,54 +180,68 @@ export const SpreadsheetService = {
 
     // Save locally
     const existing = this.getRecords();
-    existing.unshift(record);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(existing));
+    const filtered = existing.filter(r => r.name.toLowerCase() !== firstName.toLowerCase());
+    filtered.unshift(record);
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(filtered));
 
-    // Post to SheetDB matching exact "FIRST NAME" column in Google Sheet
     const apiUrl = this.getWebhookUrl();
     if (apiUrl) {
       try {
-        const payload = {
-          data: [
-            {
-              'FIRST NAME': firstName,
-              'First Name': firstName,
-              'FirstName': firstName,
-              'NAME': firstName,
-              'Name': firstName,
-              'MOVES': record.moves,
-              'Moves': record.moves,
-              'TIME': record.timeFormatted,
-              'Time': record.timeFormatted,
-              'SCORE': record.score,
-              'Score': record.score,
-              'PUZZLE': record.puzzleImage,
-              'Puzzle': record.puzzleImage,
-              'DATE': record.timestamp,
-              'Date': record.timestamp,
-              'ID': record.id
-            }
-          ]
+        // 1. First attempt to PATCH (update) existing row for FIRST NAME
+        const patchUrl = `${apiUrl}/FIRST%20NAME/${encodeURIComponent(firstName)}`;
+        const patchPayload = {
+          data: {
+            'FIRST NAME': firstName,
+            'Moves ': String(movesVal),
+            'Moves': String(movesVal),
+            'leaderborder': leaderborderVal,
+            'leaderboard': leaderborderVal
+          }
         };
 
-        const response = await fetch(apiUrl, {
-          method: 'POST',
+        const patchRes = await fetch(patchUrl, {
+          method: 'PATCH',
           headers: {
             'Accept': 'application/json',
             'Content-Type': 'application/json'
           },
-          body: JSON.stringify(payload)
+          body: JSON.stringify(patchPayload)
         });
 
-        if (response.ok) {
-          record.syncedToCloud = true;
-          console.log('✅ SheetDB record success for FIRST NAME:', firstName);
+        const patchData = await patchRes.json();
+
+        // If no rows were updated, POST a new row
+        if (!patchRes.ok || !patchData || patchData.updated === 0) {
+          const postPayload = {
+            data: [
+              {
+                'FIRST NAME': firstName,
+                'Moves ': String(movesVal),
+                'Moves': String(movesVal),
+                'leaderborder': leaderborderVal,
+                'leaderboard': leaderborderVal
+              }
+            ]
+          };
+
+          await fetch(apiUrl, {
+            method: 'POST',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(postPayload)
+          });
         }
+
+        record.syncedToCloud = true;
+        console.log('✅ SheetDB updated Moves & leaderborder successfully for:', firstName);
       } catch (err) {
-        console.warn('SheetDB sync attempt:', err);
+        console.warn('SheetDB sync attempt error:', err);
       }
     }
 
     return record;
   }
 };
+
