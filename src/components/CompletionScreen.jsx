@@ -1,8 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { TROPHY_HERO_SVG } from '../services/config.js';
 import { sound } from '../services/audio.js';
 import { Stepper } from './Stepper.jsx';
-import { SpreadsheetService } from '../services/spreadsheet.js';
 
 export function CompletionScreen({
   playerName,
@@ -12,25 +11,7 @@ export function CompletionScreen({
   selectedPuzzleImage,
   onPlayAgain
 }) {
-  const [leaderboard, setLeaderboard] = useState([]);
-  const [loading, setLoading] = useState(true);
   const playerFirstName = (playerName || 'Player').trim().split(' ')[0] || 'Player';
-
-  useEffect(() => {
-    let isMounted = true;
-    SpreadsheetService.getLiveLeaderboard().then((data) => {
-      if (isMounted) {
-        setLeaderboard(data);
-        setLoading(false);
-      }
-    });
-    return () => { isMounted = false; };
-  }, [playerName, score]);
-
-  const handleDownloadCSV = () => {
-    sound.playTap();
-    SpreadsheetService.downloadCSV();
-  };
 
   return (
     <div className="step-screen-view">
@@ -41,166 +22,117 @@ export function CompletionScreen({
       />
 
       {/* Main Titles */}
-      <h1 className="welcome-title-bold" style={{ fontSize: '26px', marginBottom: '2px' }}>
-        Leaderboard
+      <h1 className="welcome-title-bold" style={{ fontSize: '26px', marginBottom: '4px' }}>
+        Puzzle Solved!
       </h1>
-      <p className="welcome-subtitle-text" style={{ marginBottom: '12px' }}>
-        Top Scores & Rankings
+      <p className="welcome-subtitle-text" style={{ marginBottom: '14px' }}>
+        Congratulations, {playerFirstName}! 🎉
       </p>
 
-      {/* Leaderboard Rankings Card with First Names */}
+      {/* Victory Summary Card */}
       <div
         style={{
           width: '100%',
           maxWidth: '340px',
           background: '#FFFFFF',
           borderRadius: '24px',
-          padding: '14px',
+          padding: '18px 16px',
           boxShadow: '0 16px 32px rgba(13, 38, 181, 0.35)',
-          marginBottom: '12px'
+          marginBottom: '16px',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '14px'
         }}
       >
-        {/* Your Score Highlight Summary Strip */}
-        <div
-          style={{
-            background: '#EFF6FF',
-            border: '1.5px solid #BFDBFE',
-            borderRadius: '16px',
-            padding: '8px 12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            marginBottom: '10px'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '18px' }}>👤</span>
-            <div>
-              <div style={{ fontSize: '13px', fontWeight: 900, color: '#1E40AF' }}>
-                {playerFirstName} (You)
-              </div>
-              <div style={{ fontSize: '11px', color: '#64748B', fontWeight: 600 }}>
-                {moves} Moves • {timeFormatted}
-              </div>
-            </div>
-          </div>
-          <div style={{ fontSize: '16px', fontWeight: 900, color: '#2563EB' }}>
-            {score.toLocaleString()} pts
-          </div>
-        </div>
-
-        {/* Stacked Leaderboard Rows */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '10px' }}>
-          {leaderboard.slice(0, 5).map((p, idx) => {
-            const isCurrent = p.name.toLowerCase() === playerFirstName.toLowerCase() && p.score === score;
-            const rankMedal = idx === 0 ? '🥇' : idx === 1 ? '🥈' : idx === 2 ? '🥉' : `${idx + 1}`;
-
-            return (
-              <div
-                key={p.id || idx}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  padding: '8px 12px',
-                  borderRadius: '14px',
-                  background: isCurrent ? '#FEF9C3' : idx === 0 ? '#FFFBEB' : '#F8FAFC',
-                  border: isCurrent ? '2px solid #FACC15' : '1px solid #E2E8F0',
-                  boxShadow: isCurrent ? '0 4px 10px rgba(250, 204, 21, 0.25)' : 'none',
-                  transition: 'all 150ms ease'
-                }}
-              >
-                {/* Left: Rank + Avatar + First Name */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <div
-                    style={{
-                      width: '26px',
-                      height: '26px',
-                      borderRadius: '50%',
-                      background: idx === 0 ? '#F59E0B' : idx === 1 ? '#94A3B8' : idx === 2 ? '#D97706' : '#E2E8F0',
-                      color: '#FFFFFF',
-                      fontSize: '11px',
-                      fontWeight: 900,
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center'
-                    }}
-                  >
-                    {idx < 3 ? rankMedal : idx + 1}
-                  </div>
-
-                  <div
-                    style={{
-                      width: '32px',
-                      height: '32px',
-                      borderRadius: '50%',
-                      background: p.avatarBg || '#3B82F6',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      fontSize: '15px'
-                    }}
-                  >
-                    {p.avatar || '👤'}
-                  </div>
-
-                  <div style={{ display: 'flex', flexDirection: 'column' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 900, color: '#1E1B4B' }}>
-                      {p.name} {isCurrent ? '⭐' : ''}
-                    </span>
-                    {p.timeFormatted && (
-                      <span style={{ fontSize: '10px', color: '#64748B', fontWeight: 600 }}>
-                        {p.moves ? `${p.moves} moves • ` : ''}{p.timeFormatted}
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Right: Score */}
-                <div style={{ fontSize: '14px', fontWeight: 900, color: idx === 0 ? '#D97706' : '#2563EB' }}>
-                  {p.score ? p.score.toLocaleString() : score}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-
-        {/* Spreadsheet Status & CSV Export Strip */}
-        <div
-          style={{
-            background: '#F0FDF4',
-            border: '1.5px solid #86EFAC',
-            borderRadius: '12px',
-            padding: '8px 10px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '15px' }}>📊</span>
-            <span style={{ fontSize: '11px', fontWeight: 800, color: '#166534' }}>
-              Saved to SheetDB API
-            </span>
-          </div>
-
-          <button
-            type="button"
-            onClick={handleDownloadCSV}
+        {/* Completed Image Preview */}
+        {selectedPuzzleImage?.url && (
+          <div
             style={{
-              background: '#16A34A',
-              color: '#FFFFFF',
-              border: 'none',
-              borderRadius: '8px',
-              padding: '4px 8px',
-              fontSize: '10px',
-              fontWeight: 800,
-              cursor: 'pointer',
-              boxShadow: '0 2px 4px rgba(22, 163, 74, 0.3)'
+              width: '110px',
+              height: '110px',
+              borderRadius: '18px',
+              backgroundImage: `url("${selectedPuzzleImage.url}")`,
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+              boxShadow: '0 8px 18px rgba(0, 0, 0, 0.18)',
+              border: '3px solid #3B82F6'
+            }}
+          />
+        )}
+
+        {/* Player Name & Badge */}
+        <div style={{ textAlign: 'center' }}>
+          <div style={{ fontSize: '18px', fontWeight: 900, color: '#1E1B4B' }}>
+            {playerFirstName}
+          </div>
+          <div style={{ fontSize: '12px', fontWeight: 700, color: '#64748B' }}>
+            {selectedPuzzleImage?.title || 'Completed Puzzle'}
+          </div>
+        </div>
+
+        {/* 3-Column Stats Grid */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(3, 1fr)',
+            gap: '8px',
+            width: '100%'
+          }}
+        >
+          {/* Moves */}
+          <div
+            style={{
+              background: '#EFF6FF',
+              border: '1.5px solid #BFDBFE',
+              borderRadius: '16px',
+              padding: '10px 6px',
+              textAlign: 'center'
             }}
           >
-            📥 Download CSV
-          </button>
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#1E40AF' }}>
+              {moves}
+            </div>
+            <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>
+              ⭐ Moves
+            </div>
+          </div>
+
+          {/* Time */}
+          <div
+            style={{
+              background: '#EFF6FF',
+              border: '1.5px solid #BFDBFE',
+              borderRadius: '16px',
+              padding: '10px 6px',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#1E40AF' }}>
+              {timeFormatted}
+            </div>
+            <div style={{ fontSize: '10px', fontWeight: 800, color: '#64748B', textTransform: 'uppercase' }}>
+              ⏱ Time
+            </div>
+          </div>
+
+          {/* Score */}
+          <div
+            style={{
+              background: '#FEF9C3',
+              border: '1.5px solid #FDE047',
+              borderRadius: '16px',
+              padding: '10px 6px',
+              textAlign: 'center'
+            }}
+          >
+            <div style={{ fontSize: '18px', fontWeight: 900, color: '#854D0E' }}>
+              {score.toLocaleString()}
+            </div>
+            <div style={{ fontSize: '10px', fontWeight: 800, color: '#A16207', textTransform: 'uppercase' }}>
+              🏆 Score
+            </div>
+          </div>
         </div>
       </div>
 
@@ -222,3 +154,4 @@ export function CompletionScreen({
     </div>
   );
 }
+
