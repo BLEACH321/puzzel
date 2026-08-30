@@ -215,30 +215,3 @@
   transform: scale(0.94);
 }
 
-/* Difficulty Mode Selector Chips */
-.difficulty-chips-row {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
-  margin-bottom: 8px;
-}
-
-.diff-chip-btn {
-  background: rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  color: rgba(255, 255, 255, 0.8);
-  font-size: 11px;
-  font-weight: 800;
-  padding: 4px 10px;
-  border-radius: 9999px;
-  cursor: pointer;
-  transition: all 150ms ease;
-}
-
-.diff-chip-btn.active {
-  background: #FFD028;
-  color: #1E1B4B;
-  border-color: #F59E0B;
-  box-shadow: 0 2px 8px rgba(255, 208, 40, 0.4);
-}

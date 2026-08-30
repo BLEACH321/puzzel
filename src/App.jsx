@@ -20,16 +20,13 @@ export function App() {
   // Player name
   const [playerName, setPlayerName] = useState(() => Storage.getPlayerName() || APP_CONFIG.DEFAULT_NAME);
 
-  // Difficulty mode: 'normal' by default for engaging puzzle challenge
-  const [difficulty, setDifficulty] = useState('normal');
-
   // Puzzle Image: Automatically picked randomly from uploaded pool
   const [selectedPuzzleImage, setSelectedPuzzleImage] = useState(() => {
     return PUZZLE_IMAGES_LIST[Math.floor(Math.random() * PUZZLE_IMAGES_LIST.length)];
   });
 
-  // Puzzle State
-  const [gridState, setGridState] = useState(() => generateSolvableBoard(3, 'normal'));
+  // Puzzle State (Easy-to-Medium solvable 3x3 board)
+  const [gridState, setGridState] = useState(() => generateSolvableBoard(3));
   const [moves, setMoves] = useState(0);
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
@@ -58,26 +55,20 @@ export function App() {
     };
   }, [step, isPlaying]);
 
-  // Start new game
-  const startNewGame = useCallback((diff = difficulty) => {
+  // Start new game with easy-to-medium friendly scramble
+  const startNewGame = useCallback(() => {
     const randomImg = PUZZLE_IMAGES_LIST[Math.floor(Math.random() * PUZZLE_IMAGES_LIST.length)];
     setSelectedPuzzleImage(randomImg);
 
-    const newBoard = generateSolvableBoard(3, diff);
+    const newBoard = generateSolvableBoard(3);
     setGridState(newBoard);
     setMoves(0);
     setElapsedSeconds(0);
     setHintTile(null);
     setIsPlaying(true);
-  }, [difficulty]);
+  }, []);
 
-  // Handle Difficulty Change
-  const handleChangeDifficulty = (newDiff) => {
-    setDifficulty(newDiff);
-    startNewGame(newDiff);
-  };
-
-  // Continue from Step 1 to Step 2
+  // Continue from Step 1 to Step 2: Records First Name to Google Sheet immediately!
   const handleContinueFromWelcome = () => {
     const cleanName = playerName.trim() || APP_CONFIG.DEFAULT_NAME;
     Storage.setPlayerName(cleanName);
@@ -93,7 +84,7 @@ export function App() {
       puzzleImage: selectedPuzzleImage?.title || 'Community Image'
     });
 
-    startNewGame(difficulty);
+    startNewGame();
     setStep(2);
   };
 
@@ -163,14 +154,24 @@ export function App() {
     }
   };
 
+  // Auto Move / Step Assist
+  const handleAutoMove = () => {
+    if (step !== 2 || !isPlaying) return;
+
+    const optimalMove = getOptimalNextMove(gridState, 3);
+    if (optimalMove) {
+      handleTileMove(optimalMove.index, null);
+    }
+  };
+
   // Victory Handler & Automatic Spreadsheet Recording
   const handleVictory = (finalMoves, finalTimeSec) => {
     setIsPlaying(false);
     sound.playVictory();
 
-    const baseScore = difficulty === 'hard' ? 2000 : difficulty === 'easy' ? 1200 : 1600;
-    const timePenalty = finalTimeSec * 4;
-    const movePenalty = finalMoves * 7;
+    const baseScore = 1500;
+    const timePenalty = finalTimeSec * 3;
+    const movePenalty = finalMoves * 6;
     const score = Math.max(500, Math.round(baseScore - timePenalty - movePenalty));
     setLastScore(score);
 
@@ -191,12 +192,12 @@ export function App() {
 
   // Restart puzzle
   const handleRestart = () => {
-    startNewGame(difficulty);
+    startNewGame();
   };
 
   // Play Again from Step 3
   const handlePlayAgain = () => {
-    startNewGame(difficulty);
+    startNewGame();
     setStep(2);
   };
 
@@ -220,10 +221,9 @@ export function App() {
           moves={moves}
           timeFormatted={formatTime(elapsedSeconds)}
           hintTile={hintTile}
-          difficulty={difficulty}
-          onChangeDifficulty={handleChangeDifficulty}
           onTileMove={handleTileMove}
           onRequestHint={handleRequestHint}
+          onAutoMove={handleAutoMove}
           onRestart={handleRestart}
         />
       )}

@@ -1,4 +1,4 @@
-// Solvability Engine & A* Solver with Deep & Difficult Scramble
+// Solvability Engine & A* Solver with Easy Default Scramble
 
 export function getGoalState(size = 3) {
   const total = size * size;
@@ -87,7 +87,7 @@ export function getOptimalNextMove(initialState, size = 3) {
   gScores.set(startKey, 0);
 
   let iterations = 0;
-  const MAX_ITERATIONS = 5000;
+  const MAX_ITERATIONS = 4000;
 
   while (openSet.length > 0 && iterations < MAX_ITERATIONS) {
     iterations++;
@@ -155,12 +155,12 @@ export function getOptimalNextMove(initialState, size = 3) {
   return null;
 }
 
-// Generate difficult, thoroughly mixed 50+ move scramble
-export function generateSolvableBoard(size = 3, difficulty = 'hard') {
-  let steps = 55;
-  if (difficulty === 'easy') steps = 18;
-  else if (difficulty === 'normal') steps = 36;
-  else if (difficulty === 'hard') steps = 55;
+/**
+ * Generate a solvable scramble that is easy-to-medium, fun, and fast to solve:
+ * 6-8 moves from the goal state.
+ */
+export function generateSolvableBoard(size = 3) {
+  const steps = 7; // Easy to medium sweet-spot
 
   let state = getGoalState(size);
   let lastMovedTile = -1;
@@ -168,14 +168,16 @@ export function generateSolvableBoard(size = 3, difficulty = 'hard') {
   for (let i = 0; i < steps; i++) {
     const neighbors = getNeighbors(state, size);
     const filtered = neighbors.filter(n => n.movedTile !== lastMovedTile);
-    const chosen = (filtered.length > 0 ? filtered : neighbors)[Math.floor(Math.random() * (filtered.length || neighbors.length))];
+    const pool = filtered.length > 0 ? filtered : neighbors;
+    const chosen = pool[Math.floor(Math.random() * pool.length)];
     state = chosen.state;
     lastMovedTile = chosen.movedTile;
   }
 
+  // Ensure state is not already at goal
   if (isGoal(state, size)) {
-    const n1 = getNeighbors(state, size)[0];
-    state = n1.state;
+    const neighbors = getNeighbors(state, size);
+    state = neighbors[0].state;
   }
 
   return state;
