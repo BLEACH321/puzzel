@@ -246,22 +246,8 @@ export const CARTOON_LANDSCAPE_SVG = 'data:image/svg+xml;utf8,' + encodeURICompo
 </svg>
 `);
 
-// Complete List of All Real Images uploaded by user + Colorful Jigsaw + Cartoon Nature
+// Complete List of Real Community Images + Landscapes uploaded for 8-Puzzle
 export const PUZZLE_IMAGES_LIST = [
-  {
-    id: 'colorful_jigsaw',
-    title: 'Color Jigsaw Block',
-    category: 'Jigsaw Pattern',
-    url: COLORFUL_JIGSAW_SVG,
-    icon: '🧩'
-  },
-  {
-    id: 'cartoon_nature',
-    title: 'Sunny Landscape',
-    category: 'Nature',
-    url: CARTOON_LANDSCAPE_SVG,
-    icon: '☀️'
-  },
   {
     id: 'tree_plantation',
     title: 'Tree Plantation',
@@ -331,6 +317,13 @@ export const PUZZLE_IMAGES_LIST = [
     category: 'Community',
     url: '/puzzles/activity_3.jpeg',
     icon: '📸'
+  },
+  {
+    id: 'community_art',
+    title: 'Community Art Project',
+    category: 'Community',
+    url: '/puzzles/community_art.jpeg',
+    icon: '🎨'
   }
 ];
 
