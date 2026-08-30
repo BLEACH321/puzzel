@@ -13,7 +13,7 @@ const STORAGE_KEYS = {
 
 export const Storage = {
   getPlayerName() {
-    return localStorage.getItem(STORAGE_KEYS.PLAYER_NAME) || APP_CONFIG.DEFAULT_NAME;
+    return localStorage.getItem(STORAGE_KEYS.PLAYER_NAME) || '';
   },
 
   setPlayerName(name) {

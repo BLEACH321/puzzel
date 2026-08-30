@@ -1,7 +1,7 @@
 // Configuration & Full Curated / Uploaded Image Catalogue for 8-Puzzle
 
 export const APP_CONFIG = {
-  DEFAULT_NAME: 'Alex',
+  DEFAULT_NAME: '',
   MAX_HINTS: 3,
   GRID_SIZE: 3
 };

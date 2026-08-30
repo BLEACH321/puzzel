@@ -17,8 +17,8 @@ export function App() {
   // Step state: 1 = Welcome, 2 = Complete Puzzle, 3 = Completion & Leaderboard
   const [step, setStep] = useState(1);
 
-  // Player name
-  const [playerName, setPlayerName] = useState(() => Storage.getPlayerName() || APP_CONFIG.DEFAULT_NAME);
+  // Player name (starts completely blank)
+  const [playerName, setPlayerName] = useState('');
 
   // Puzzle Image: Automatically picked randomly from uploaded pool
   const [selectedPuzzleImage, setSelectedPuzzleImage] = useState(() => {

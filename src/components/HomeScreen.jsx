@@ -33,7 +33,7 @@ export function HomeScreen({
         </div>
 
         <label className="card-field-label" htmlFor="first-name-input">
-          First name
+          name
         </label>
         <div style={{ position: 'relative', width: '100%', marginBottom: '20px' }}>
           <span className="input-icon-user">👤</span>
@@ -41,7 +41,7 @@ export function HomeScreen({
             id="first-name-input"
             type="text"
             className="name-input-styled-box"
-            placeholder="First name"
+            placeholder=""
             value={playerName}
             onChange={(e) => setPlayerName(e.target.value)}
             maxLength={18}
