@@ -56,9 +56,12 @@ export function App() {
   }, [step, isPlaying]);
 
   // Start new game with easy-to-medium friendly scramble
-  const startNewGame = useCallback(() => {
-    const randomImg = PUZZLE_IMAGES_LIST[Math.floor(Math.random() * PUZZLE_IMAGES_LIST.length)];
-    setSelectedPuzzleImage(randomImg);
+  // changeImage: whether to pick a new image or retain current puzzle image
+  const startNewGame = useCallback((changeImage = true) => {
+    if (changeImage) {
+      const randomImg = PUZZLE_IMAGES_LIST[Math.floor(Math.random() * PUZZLE_IMAGES_LIST.length)];
+      setSelectedPuzzleImage(randomImg);
+    }
 
     const newBoard = generateSolvableBoard(3);
     setGridState(newBoard);
@@ -183,9 +186,9 @@ export function App() {
     }, 600);
   };
 
-  // Restart puzzle
+  // Restart puzzle: retain the current puzzle image, only scramble blocks and reset moves & timer
   const handleRestart = () => {
-    startNewGame();
+    startNewGame(false);
   };
 
   // Play Again from Step 3
