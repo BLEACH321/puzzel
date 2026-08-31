@@ -150,16 +150,6 @@ export function App() {
     }
   };
 
-  // Auto Move / Step Assist
-  const handleAutoMove = () => {
-    if (step !== 2 || !isPlaying) return;
-
-    const optimalMove = getOptimalNextMove(gridState, 3);
-    if (optimalMove) {
-      handleTileMove(optimalMove.index, null);
-    }
-  };
-
   // Victory Handler & Automatic Spreadsheet Recording
   const handleVictory = (finalMoves, finalTimeSec) => {
     setIsPlaying(false);
@@ -219,7 +209,6 @@ export function App() {
           hintTile={hintTile}
           onTileMove={handleTileMove}
           onRequestHint={handleRequestHint}
-          onAutoMove={handleAutoMove}
           onRestart={handleRestart}
         />
       )}

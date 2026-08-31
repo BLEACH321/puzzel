@@ -156,11 +156,11 @@ export function getOptimalNextMove(initialState, size = 3) {
 }
 
 /**
- * Generate a balanced Medium solvable board:
- * 14-16 moves scramble from goal state (neither trivial nor excessively hard).
+ * Generate a moderately easy, solvable board:
+ * ~6-8 moves scramble from goal state (accessible, fun, not trivial and not overly complex).
  */
 export function generateSolvableBoard(size = 3) {
-  const steps = 15; // Balanced Medium level
+  const steps = 7; // Moderately easy level
 
   let state = getGoalState(size);
   let lastMovedTile = -1;
@@ -174,9 +174,9 @@ export function generateSolvableBoard(size = 3) {
     lastMovedTile = chosen.movedTile;
   }
 
-  // Ensure state is not already solved and has meaningful displacement
-  if (isGoal(state, size) || manhattanDistance(state, size) < 4) {
-    for (let i = 0; i < 6; i++) {
+  // Ensure state is not already solved and has meaningful displacement (at least 3 distance)
+  if (isGoal(state, size) || manhattanDistance(state, size) < 3) {
+    for (let i = 0; i < 4; i++) {
       const neighbors = getNeighbors(state, size);
       const filtered = neighbors.filter(n => n.movedTile !== lastMovedTile);
       const chosen = (filtered.length > 0 ? filtered : neighbors)[0];

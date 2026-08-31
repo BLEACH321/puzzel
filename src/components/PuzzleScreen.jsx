@@ -151,11 +151,11 @@ export function PuzzleScreen({
         )}
       </div>
 
-      {/* Action Controls: 💡 Hint, ✨ Auto Step, ↻ Restart */}
-      <div className="puzzle-btns-row" style={{ gap: '8px' }}>
+      {/* Action Controls: 💡 Hint, ↻ Restart */}
+      <div className="puzzle-btns-row">
         <button
           className="btn-gold-3d"
-          style={{ height: '48px', fontSize: '14px', flex: 1 }}
+          style={{ height: '48px', fontSize: '14px' }}
           onClick={() => {
             sound.playTap();
             onRequestHint();
@@ -166,35 +166,8 @@ export function PuzzleScreen({
         </button>
 
         <button
-          type="button"
-          onClick={() => {
-            sound.playTap();
-            onAutoMove();
-          }}
-          style={{
-            height: '48px',
-            flex: 1,
-            background: 'linear-gradient(180deg, #34D399 0%, #059669 100%)',
-            color: '#FFFFFF',
-            border: 'none',
-            borderRadius: '16px',
-            fontSize: '14px',
-            fontWeight: 800,
-            cursor: 'pointer',
-            boxShadow: '0 4px 0 #047857, 0 8px 16px rgba(5, 150, 105, 0.3)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px'
-          }}
-        >
-          <span>✨</span>
-          <span>Auto Step</span>
-        </button>
-
-        <button
           className="btn-purple-3d"
-          style={{ height: '48px', fontSize: '14px', flex: 1 }}
+          style={{ height: '48px', fontSize: '14px' }}
           onClick={() => {
             sound.playTap();
             onRestart();
